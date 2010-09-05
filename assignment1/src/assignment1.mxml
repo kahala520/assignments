@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Application xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx" minWidth="500" minHeight="500"
+			   xmlns:myForm="forms.*">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<s:states>
+		<s:State name="promptGender"/>
+		<s:State name="femaleForm"/>
+		<s:State name="maleForm"/>
+	</s:states>
+	
+	<s:layout>
+		<s:VerticalLayout horizontalAlign="center" verticalAlign="middle"/>
+	</s:layout>
+	
+	<s:Panel title="What is your gender?" 
+			 title.femaleForm="Female" 
+			 title.maleForm="Male" 
+			 title.promptGender="What is your gender?">		
+		<s:layout>
+			<s:VerticalLayout paddingBottom="10" paddingLeft="10" paddingRight="10" paddingTop="10"/>
+		</s:layout>
+		
+		<s:HGroup>
+			<s:Button label="Female" 
+				click="currentState='femaleForm';" 
+				includeIn="promptGender"/>
+			<s:Button label="Male" 
+				click="currentState='maleForm';" 
+				includeIn="promptGender"/>		
+		</s:HGroup>		
+		
+		<myForm:femaleForm 
+			includeIn="femaleForm"/>
+		
+		<myForm:maleForm 
+			includeIn="maleForm"/>
+		
+		<s:Button label="Back"
+			click="currentState='promptGender';" excludeFrom="promptGender"/>
+		
+	</s:Panel>
+	
+
+</s:Application>
+

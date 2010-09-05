@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Application xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   width="100%" height="100%"
+			   applicationComplete="clickTimer()">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			[Bindable]
+			protected var clickNum:Number = 0;
+			[Bindable]
+			protected var lastClickedTime:Number = 0;
+			[Bindable]
+			protected var timeGap:Number = 0;
+			[Bindable]
+			protected var rectX:Number = 0;
+			[Bindable]
+			protected var rectY:Number = 0;
+			
+			protected var myTimer:Timer = new Timer(1000, 0); // 1 second delay, indefinite repeat
+			protected var clicked:Boolean = false;
+	
+			protected function clickTimer():void 
+			{
+				myTimer.start();
+				myTimer.addEventListener(TimerEvent.TIMER, timerCompleted);
+			}
+			
+			protected function yellowRectContainer_clickHandler(event:MouseEvent):void
+			{
+				clickNum++;
+				lastClickedTime = getTimer();
+				changeRectPosition();
+				alertText.text = "OH YOU POKE ME!";
+				clicked = true;
+			}
+			
+			protected function timerCompleted(event:TimerEvent):void
+			{
+				timeGap = getTimer() - lastClickedTime;
+				
+				if(timeGap > 1000){
+					changeRectPosition();
+					
+					if(clicked){
+						alertText.text = "";
+					}
+					
+					if(timeGap > 4000){
+						myTimer.delay = 750;
+						alertText.text = "HAHA! SUCKER!";
+					}
+					
+					if(timeGap > 8000){
+						yellowRect.width = yellowRectContainer.width = 100;
+						yellowRect.height = yellowRectContainer.height = 25;
+						myTimer.delay = 500;
+						alertText.text = "MUHAHA~";
+					}
+				}
+			}
+			
+			protected function changeRectPosition():void
+			{
+				rectX = Math.floor(Math.random() * (this.width - yellowRect.width));
+				rectY = Math.floor(Math.random() * (this.height - yellowRect.height));
+			}
+		]]>
+	</fx:Script>
+	
+	<s:layout>
+		<s:BasicLayout/>
+	</s:layout>
+	
+	<s:Label text="Number of clicks: {clickNum}" top="10" right="10"/>
+	<s:Label text="Last clicked at {lastClickedTime} ms" top="30" right="10"/>
+	<s:Label text="Time gap: {timeGap} ms" top="50" right="10"/>
+	
+	<s:Group id="yellowRectContainer" x="{rectX}" y="{rectY}" click="yellowRectContainer_clickHandler(event)" width="150" height="50">
+		<s:Rect id="yellowRect" width="150" height="50">
+			<s:stroke>
+				<s:SolidColorStroke color="#999999" weight="2"/>
+			</s:stroke>
+			<s:fill>
+				<s:SolidColor color="#ffcc00"/>
+			</s:fill>
+		</s:Rect>
+		<s:Label id="alertText" text="COME GET ME!" horizontalCenter="0" verticalCenter="0" color="#666666" fontSize="15"/>
+	</s:Group>
+		
+</s:Application>

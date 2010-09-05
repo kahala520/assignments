@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" width="300" height="200">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<s:layout>
+		<s:VerticalLayout/>
+	</s:layout>
+	
+	<!--<s:Label text="Male"/>-->
+	
+	<s:HGroup verticalAlign="middle">
+		<s:Label text="Penis Length:"/>
+		<s:DropDownList width="150" prompt="Please select one">
+			<s:ArrayCollection>
+				<fx:String>4"</fx:String>
+				<fx:String>4.5"</fx:String>
+				<fx:String>5"</fx:String>
+				<fx:String>5.5"</fx:String>
+				<fx:String>6"</fx:String>
+				<fx:String>6.5"</fx:String>
+			</s:ArrayCollection>
+		</s:DropDownList> 
+	</s:HGroup>
+	
+	<s:HGroup verticalAlign="middle">
+		<s:Label text="Penis Length:"/>
+		<s:DropDownList width="150" prompt="Please select one">
+			<s:ArrayCollection>
+				<fx:String>4"</fx:String>
+				<fx:String>4.5"</fx:String>
+				<fx:String>5"</fx:String>
+				<fx:String>5.5"</fx:String>
+				<fx:String>6"</fx:String>
+				<fx:String>6.5"</fx:String>
+			</s:ArrayCollection>
+		</s:DropDownList> 
+	</s:HGroup>
+	
+	<s:HGroup>
+		<s:Label text="Circumsized?"/>
+		<s:CheckBox />
+	</s:HGroup>
+	
+	<s:HGroup>
+		<s:Label text="Grooming Habit:"/>
+		<s:TextInput width="150"/>
+	</s:HGroup>
+</s:Group>

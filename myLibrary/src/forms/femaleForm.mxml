@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" width="300" height="200">
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	
+	<s:layout>
+		<s:VerticalLayout/>
+	</s:layout>
+	
+	<!--<s:Label text="Female"/>-->
+	
+	<s:HGroup>
+		<s:Label text="Cup Size:"/>
+		<s:DropDownList width="150" prompt="Please select one">
+			<s:ArrayCollection>
+				<fx:String>A</fx:String>
+				<fx:String>B</fx:String>
+				<fx:String>C</fx:String>
+				<fx:String>D</fx:String>
+				<fx:String>DD</fx:String>
+				<fx:String>DDD</fx:String>
+				<fx:String>E</fx:String>
+				<fx:String>F</fx:String>
+				<fx:String>G</fx:String>
+			</s:ArrayCollection>
+		</s:DropDownList> 
+	</s:HGroup>
+	
+	<s:HGroup>
+		<s:Label text="Bust Size:"/>
+		<s:DropDownList width="150" prompt="Please select one">
+			<s:ArrayCollection>
+				<fx:String>30</fx:String>
+				<fx:String>32</fx:String>
+				<fx:String>34</fx:String>
+				<fx:String>36</fx:String>
+				<fx:String>38</fx:String>
+				<fx:String>40</fx:String>
+			</s:ArrayCollection>
+		</s:DropDownList> 
+	</s:HGroup>
+	
+	<s:HGroup>
+		<s:Label text="Nipple Color?"/>
+		<s:TextInput width="150"/>
+	</s:HGroup>
+	
+	<s:HGroup>
+		<s:Label text="Nipple Shape:"/>
+		<s:RadioButton groupName="nippleShape" id="Round" label="Round"/>
+		<s:RadioButton groupName="nippleShape" id="Oval" label="Oval"/>
+		<s:RadioButton groupName="nippleShape" id="DinnerPlate" label="Dinner Plate"/>
+	</s:HGroup>
+</s:Group>
