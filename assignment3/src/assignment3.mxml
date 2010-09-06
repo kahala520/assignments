@@ -5,5 +5,83 @@
 			   width="100%" height="100%">
 	<fx:Declarations>
 		<!-- Place non-visual elements (e.g., services, value objects) here -->
+		<mx:SoundEffect id="dropSound" source="@Embed(source='../assets/drop_sound.mp3')" target="{this}"/>
+		<mx:SoundEffect id="completeSound" source="@Embed(source='../assets/complete_sound.mp3')" target="{this}"/>
 	</fx:Declarations>
+	
+	<fx:Script>
+		<![CDATA[
+			import mx.collections.ArrayCollection;
+			import mx.events.CollectionEvent;
+			import mx.events.DragEvent;
+			import mx.events.FlexEvent;
+			
+			[Bindable]
+			protected var optionArrayList:ArrayCollection = 
+				new ArrayCollection(['positive attitude', 'jump really high', 'nice breasts', 'great chef', 'bilingual', 'punch really hard', 'power of seduction', 'bow and arrows', 'bubble butt', 'can hack the internets']);
+			[Bindable]
+			protected var choiceArrayList:ArrayCollection = new ArrayCollection([]);
+			[Bindable]
+			public var listNum:Number = 0;
+			
+			protected function choiceList_dragEnterHandler(event:DragEvent):void
+			{
+				if(choiceArrayList.length >= 5)
+				{
+					choiceList.dropEnabled = false;
+					alertMsg.text = "Too many choices! Make up your mind!"
+				}
+			}
+
+			protected function choiceList_dragDropHandler(event:DragEvent):void
+			{
+				dropSound.play();							
+			}
+			
+			protected function optionList_dragCompleteHandler(event:DragEvent):void
+			{
+				if(choiceArrayList.length == 5)
+				{
+					alertMsg.text = "yay!";
+					completeSound.play();
+				}					
+			}
+			
+			protected function list_completeHandler(event:FlexEvent):void
+			{
+				choiceArrayList.addEventListener(CollectionEvent.COLLECTION_CHANGE);
+			}
+
+		]]>
+	</fx:Script>
+	
+	<s:layout>
+		<s:VerticalLayout horizontalAlign="center" verticalAlign="middle" />
+	</s:layout>
+	
+	<s:HGroup horizontalAlign="center" verticalAlign="top" gap="100">
+		
+		<s:VGroup>
+			<s:Label text="List of Options:"/>
+			<s:List id="optionList" dataProvider="{optionArrayList}" dragEnabled="true" dragMoveEnabled="true" 
+					dragComplete="optionList_dragCompleteHandler(event)">
+				<s:layout>
+					<s:VerticalLayout/>
+				</s:layout>
+			</s:List>
+		</s:VGroup>
+		
+		<s:VGroup>
+			<s:Label text="You have chosen:"/>	
+			<s:List id="choiceList" dataProvider="{choiceArrayList}" dropEnabled="true" minWidth="300" height="50" 
+					dragEnter="choiceList_dragEnterHandler(event)" dragDrop="choiceList_dragDropHandler(event)">
+				<s:layout>
+					<s:HorizontalLayout horizontalAlign="center" verticalAlign="middle"/>
+				</s:layout>
+			</s:List>
+			<s:Label id="alertMsg" color="#ff0000"/>
+			<s:Label text="length: {choiceArrayList.length}"/>
+		</s:VGroup>
+	</s:HGroup>
+	
 </s:Application>
