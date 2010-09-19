@@ -24,32 +24,42 @@
 			[Bindable]
 			public var listNum:Number = 0;
 			
-			protected function choiceList_dragEnterHandler(event:DragEvent):void
-			{
-				if(choiceArrayList.length >= 5)
-				{
-					choiceList.dropEnabled = false;
-					alertMsg.text = "Too many choices! Make up your mind!"
-				}
-			}
-
 			protected function choiceList_dragDropHandler(event:DragEvent):void
 			{
-				dropSound.play();							
-			}
-			
-			protected function optionList_dragCompleteHandler(event:DragEvent):void
-			{
-				if(choiceArrayList.length == 5)
+				var droppedData:Object = (event.dragInitiator as List).selectedItems[0];
+				
+				if(choiceArrayList.length == 4 && !choiceArrayList.contains( droppedData ) )
 				{
 					alertMsg.text = "yay!";
 					completeSound.play();
-				}					
+				}
+				else if(!choiceArrayList.contains( droppedData ) )
+				{
+					alertMsg.text = "";
+					dropSound.play();	
+				}
 			}
-			
-			protected function list_completeHandler(event:FlexEvent):void
+
+
+			protected function choiceList_dragEnterHandler(event:DragEvent):void
 			{
-				choiceArrayList.addEventListener(CollectionEvent.COLLECTION_CHANGE);
+				var droppedData:Object = (event.dragInitiator as List).selectedItems[0];
+				
+				if(choiceArrayList.length == 5 && !choiceArrayList.contains( droppedData ))
+				{
+					choiceList.dropEnabled = false;
+					alertMsg.text = "Too many choices! Make up your mind!";						
+				}		
+			}
+
+
+			protected function optionList_dragEnterHandler(event:DragEvent):void
+			{
+				if(choiceArrayList.length <= 5)
+				{
+					choiceList.dropEnabled = true;
+					alertMsg.text = "";					
+				}
 			}
 
 		]]>
@@ -63,8 +73,8 @@
 		
 		<s:VGroup>
 			<s:Label text="List of Options:"/>
-			<s:List id="optionList" dataProvider="{optionArrayList}" dragEnabled="true" dragMoveEnabled="true" 
-					dragComplete="optionList_dragCompleteHandler(event)">
+			<s:List id="optionList" dataProvider="{optionArrayList}" dragEnabled="true" dragMoveEnabled="true" dropEnabled="true" 
+					dragEnter="optionList_dragEnterHandler(event)" allowMultipleSelection="true">
 				<s:layout>
 					<s:VerticalLayout/>
 				</s:layout>
@@ -73,8 +83,8 @@
 		
 		<s:VGroup>
 			<s:Label text="You have chosen:"/>	
-			<s:List id="choiceList" dataProvider="{choiceArrayList}" dropEnabled="true" minWidth="300" height="50" 
-					dragEnter="choiceList_dragEnterHandler(event)" dragDrop="choiceList_dragDropHandler(event)">
+			<s:List id="choiceList" dataProvider="{choiceArrayList}" dragEnabled="true" dragMoveEnabled="true" dropEnabled="true" 
+					dragDrop="choiceList_dragDropHandler(event)" dragEnter="choiceList_dragEnterHandler(event)" minWidth="300" height="50">
 				<s:layout>
 					<s:HorizontalLayout horizontalAlign="center" verticalAlign="middle"/>
 				</s:layout>
