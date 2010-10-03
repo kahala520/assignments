@@ -2,7 +2,77 @@
 <s:Application xmlns:fx="http://ns.adobe.com/mxml/2009" 
 			   xmlns:s="library://ns.adobe.com/flex/spark" 
 			   xmlns:mx="library://ns.adobe.com/flex/mx" minWidth="955" minHeight="600">
+	
+	<fx:Declarations>
+		<mx:SoundEffect id="music" source="@Embed(source='../assets/song.mp3')" target="{this}" repeatCount="0" useDuration="false" duration="360000"/>
+	</fx:Declarations>
+
+	<fx:Script>
+		<![CDATA[
+
+			protected function easyButton_clickHandler(event:MouseEvent):void
+			{
+				currentState = 'easyMode';
+			}
+
+
+			protected function mediumButton_clickHandler(event:MouseEvent):void
+			{
+				currentState='mediumMode';
+			}
+
+
+			protected function hardButton_clickHandler(event:MouseEvent):void
+			{
+				currentState='hardMode';
+			}
+		]]>
+	</fx:Script>
+
 	<fx:Declarations>
 		<!-- Place non-visual elements (e.g., services, value objects) here -->
 	</fx:Declarations>
+	
+	<s:states>
+		<s:State name="mainMode"/>
+		<s:State name="easyMode" enterState="music.play();" exitState="music.end();"/>
+		<s:State name="mediumMode" enterState="music.play();" exitState="music.end();"/>
+		<s:State name="hardMode" enterState="music.play();" exitState="music.end();"/>
+	</s:states>
+	
+	<s:transitions>
+		<s:Transition fromState="*" toState="*">
+			<s:Fade target="{this}" duration="400" alphaFrom="0" alphaTo="1"/>
+		</s:Transition>
+	</s:transitions>
+	
+	<s:layout>
+		<s:VerticalLayout horizontalAlign="center" verticalAlign="middle" gap="50"/>
+	</s:layout>
+	
+	<s:Label text="TITLE" text.easyMode="EASY" text.mediumMode="MEDIUM" text.hardMode="HARD" 
+			 fontSize="40" fontWeight="bold" color="#ff99cc"/>
+	
+	<s:HGroup id="mainScreen" gap="50" includeIn="mainMode">
+		<s:Button id="easyButton" label="EASY" cornerRadius="12" width="100" height="50" 
+				  fontSize="18" color="#666666" chromeColor="#F5A9D0" buttonMode="true" click="easyButton_clickHandler(event)"/>
+		<s:Button id="mediumButton" label="MEDIUM" cornerRadius="12" width="100" height="50" 
+				  fontSize="18" color="#666666" chromeColor="#F5A9D0" buttonMode="true" click="mediumButton_clickHandler(event)"/>
+		<s:Button id="hardButton" label="HARD" cornerRadius="12" width="100" height="50" 
+				  fontSize="18" color="#666666" chromeColor="#F5A9D0" buttonMode="true" click="hardButton_clickHandler(event)"/>
+	</s:HGroup>
+	
+	<s:HGroup id="easyScreen" includeIn="easyMode">
+		<s:Label text="this is easy mode"/>
+	</s:HGroup>
+	
+	<s:HGroup id="mediumScreen" includeIn="mediumMode">
+		<s:Label text="this is medium mode"/>
+	</s:HGroup>
+	
+	<s:HGroup id="hardScreen" includeIn="hardMode">
+		<s:Label text="this is hard mode"/>
+	</s:HGroup>
+	
+	<s:Button label="Go Back" excludeFrom="mainMode" click="currentState='mainMode';"/>
 </s:Application>
