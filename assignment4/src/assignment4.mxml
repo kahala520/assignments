@@ -2,42 +2,71 @@
 <s:Application xmlns:fx="http://ns.adobe.com/mxml/2009" 
 			   xmlns:s="library://ns.adobe.com/flex/spark" 
 			   xmlns:mx="library://ns.adobe.com/flex/mx" minWidth="955" minHeight="600">
-	
-	<fx:Declarations>
-		<mx:SoundEffect id="music" source="@Embed(source='../assets/song.mp3')" target="{this}" repeatCount="0" useDuration="false" duration="360000"/>
-	</fx:Declarations>
 
 	<fx:Script>
 		<![CDATA[
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			
+			protected var gameTimer:Timer = new Timer(2000,1);
+			[Bindable]
+			protected var timerCount:Number = 0;
 
-			protected function easyButton_clickHandler(event:MouseEvent):void
+			protected function easyMode_enterStateHandler(event:FlexEvent):void
 			{
-				currentState = 'easyMode';
+				music.play();
+				gameTimer.start();
+				gameTimer.addEventListener(TimerEvent.TIMER, timerCompleteHandler);
+				
+				text.setFocus();
+				FlexGlobals.topLevelApplication.addEventListener(KeyboardEvent.KEY_DOWN,checkKeys);
+			}
+			
+			protected function easyMode_exitStateHandler(event:FlexEvent):void
+			{
+				music.end();
+			}		
+			
+			protected function timerCompleteHandler():void
+			{
+				text.text = 'times up';
+			}
+			protected function checkKeys(event:KeyboardEvent):void
+			{
+				text.text = 'enter checkKeys';
+				
+				//keycode: left=37, up=38, right=39, down=40
+				if(event.keyCode == 37)
+				{
+					leftButton.alpha = 1;
+				}
+				else if(event.keyCode == 38)
+				{
+					upButton.alpha = 1;
+				}
+				else if(event.keyCode == 39)
+				{
+					rightButton.alpha = 1;
+				}
+				else if(event.keyCode == 40)
+				{
+					downButton.alpha = 1;
+				}
 			}
 
-
-			protected function mediumButton_clickHandler(event:MouseEvent):void
-			{
-				currentState='mediumMode';
-			}
-
-
-			protected function hardButton_clickHandler(event:MouseEvent):void
-			{
-				currentState='hardMode';
-			}
 		]]>
 	</fx:Script>
 
 	<fx:Declarations>
-		<!-- Place non-visual elements (e.g., services, value objects) here -->
+		<mx:SoundEffect id="music" source="@Embed(source='../assets/song.mp3')" target="{this}" repeatCount="0" useDuration="false" duration="360000"/>
 	</fx:Declarations>
 	
 	<s:states>
-		<s:State name="mainMode"/>
-		<s:State name="easyMode" enterState="music.play();" exitState="music.end();"/>
+		<s:State name="titleMode"/>
+		<s:State name="easyMode" id="easyMode" enterState="easyMode_enterStateHandler(event)" exitState="easyMode_exitStateHandler(event)"/>
 		<s:State name="mediumMode" enterState="music.play();" exitState="music.end();"/>
 		<s:State name="hardMode" enterState="music.play();" exitState="music.end();"/>
+		<s:State name="resultMode"/>
 	</s:states>
 	
 	<s:transitions>
@@ -50,29 +79,45 @@
 		<s:VerticalLayout horizontalAlign="center" verticalAlign="middle" gap="50"/>
 	</s:layout>
 	
-	<s:Label text="TITLE" text.easyMode="EASY" text.mediumMode="MEDIUM" text.hardMode="HARD" 
-			 fontSize="40" fontWeight="bold" color="#ff99cc"/>
+	<s:VGroup id="titleScreen" horizontalAlign="center" gap="50" includeIn="titleMode">
+		<s:Label text="TITLE" fontSize="40" fontWeight="bold" color="#FF99CC"/>
+		<s:HGroup gap="50">
+			<s:Button id="easyButton" label="EASY" cornerRadius="12" width="100" height="50" 
+					  fontSize="18" color="#666666" chromeColor="#F5A9D0" buttonMode="true" click="currentState = 'easyMode';"/>
+			<s:Button id="mediumButton" label="MEDIUM" cornerRadius="12" width="100" height="50" 
+					  fontSize="18" color="#666666" chromeColor="#F5A9D0" buttonMode="true" click="currentState='mediumMode';"/>
+			<s:Button id="hardButton" label="HARD" cornerRadius="12" width="100" height="50" 
+					  fontSize="18" color="#666666" chromeColor="#F5A9D0" buttonMode="true" click="currentState='hardMode';"/>			
+		</s:HGroup>
+	</s:VGroup>
 	
-	<s:HGroup id="mainScreen" gap="50" includeIn="mainMode">
-		<s:Button id="easyButton" label="EASY" cornerRadius="12" width="100" height="50" 
-				  fontSize="18" color="#666666" chromeColor="#F5A9D0" buttonMode="true" click="easyButton_clickHandler(event)"/>
-		<s:Button id="mediumButton" label="MEDIUM" cornerRadius="12" width="100" height="50" 
-				  fontSize="18" color="#666666" chromeColor="#F5A9D0" buttonMode="true" click="mediumButton_clickHandler(event)"/>
-		<s:Button id="hardButton" label="HARD" cornerRadius="12" width="100" height="50" 
-				  fontSize="18" color="#666666" chromeColor="#F5A9D0" buttonMode="true" click="hardButton_clickHandler(event)"/>
-	</s:HGroup>
+	<s:VGroup id="easyScreen" includeIn="easyMode">
+		<s:Button id="backButton" label="Go Back" click="currentState = 'titleMode';"/>	
+		<s:Label id="text" text="test"/>
+		<s:Label text="{timerCount}"/>
+		<s:Group>
+			<s:layout>
+				<s:BasicLayout/>
+			</s:layout>
+			<s:Button id="upButton" label="" top="0" left="256" skinClass="mySkins.UpButtonSkin" alpha="0.25"/>
+			<s:Button id="leftButton" label="" top="256" left="0" skinClass="mySkins.LeftButtonSkin" alpha="0.25"/>
+			<s:Button id="downButton" label="" top="512" left="256" skinClass="mySkins.DownButtonSkin" alpha="0.25"/>
+			<s:Button id="rightButton" label="" top="256" left="512" skinClass="mySkins.RightButtonSkin" alpha="0.25"/>		
+		</s:Group>		
+	</s:VGroup>
 	
-	<s:HGroup id="easyScreen" includeIn="easyMode">
-		<s:Label text="this is easy mode"/>
-	</s:HGroup>
-	
-	<s:HGroup id="mediumScreen" includeIn="mediumMode">
+	<s:VGroup id="mediumScreen" includeIn="mediumMode">
 		<s:Label text="this is medium mode"/>
-	</s:HGroup>
+	</s:VGroup>
 	
-	<s:HGroup id="hardScreen" includeIn="hardMode">
+	<s:VGroup id="hardScreen" includeIn="hardMode">
 		<s:Label text="this is hard mode"/>
-	</s:HGroup>
+	</s:VGroup>
 	
-	<s:Button label="Go Back" excludeFrom="mainMode" click="currentState='mainMode';"/>
+	<s:VGroup id="resultScreen" includeIn="resultMode">
+		<s:Label text="GAME OVER"/>
+		<s:Label text="Your Score: "/>
+	</s:VGroup>
+	
+
 </s:Application>
