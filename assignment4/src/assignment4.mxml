@@ -5,21 +5,50 @@
 
 	<fx:Script>
 		<![CDATA[
+			import flash.filters.BitmapFilterQuality;
+			import flash.filters.BitmapFilterType;
+			
+			import mx.controls.Text;
 			import mx.core.FlexGlobals;
 			import mx.events.FlexEvent;
 			
-			protected var gameTimer:Timer = new Timer(2000,1);
+			import org.osmf.events.TimeEvent;
+			
+			import spark.filters.*;
+			
 			[Bindable]
-			protected var timerCount:Number = 0;
+			protected var gameMode:String = ""; //display current game mode
+			protected var gameTimer:Timer = new Timer(2000,0); //update arrows every 2 seconds
+			[Bindable]
+			protected var gameStartTime:Number = 0; //exact time when the game is started
+			[Bindable]
+			protected var playedTime:Number = 0; //elapsed time since the game starts
+			[Bindable]
+			protected var score:Number = 0; //keep current scores
+			[Bindable]
+			protected var life:Number = 3; //3 chances to make errors
+			[Bindable]
+			protected var keyEntered:Number = 0; //the number of entered keys - used to compare with the number of current dispayed arrows to see if it's the same
+			protected var errorFlag:Boolean = false; //if entered key is wrong, flag is on
+			protected var arrowNumber1:Number = 0; //current displaying arrow
+			protected var arrowNumber2:Number = 0; //current displaying arrow
+			protected var arrowNumber3:Number = 0; //current displaying arrow
+			[Bindable]
+			protected var easyModeArrowNumber:Number = 1; //numbers of arrows displayed in the easy mode: should be 1
+			[Bindable]
+			protected var mediumModeArrowNumber:Number = 2; //numbers of arrows displayed in the medium mode: should be 2
+			[Bindable]
+			protected var hardModeArrowNumber:Number = 0; //numbers of arrows displayed in the hard mode: should be 2 or 3
+	        protected var countdownTimer:Timer = new Timer(1000,3);//countdown 3 seconds for the hard mode
+			[Bindable]
+			protected var countdown:Number = 0;//display countdown seconds
 
 			protected function easyMode_enterStateHandler(event:FlexEvent):void
-			{
-				music.play();
-				gameTimer.start();
-				gameTimer.addEventListener(TimerEvent.TIMER, timerCompleteHandler);
-				
-				text.setFocus();
-				FlexGlobals.topLevelApplication.addEventListener(KeyboardEvent.KEY_DOWN,checkKeys);
+			{	
+				//upon enter the game, reset the game and then start
+				resetGame();			
+				gameMode = "Easy";
+				startGame();
 			}
 			
 			protected function easyMode_exitStateHandler(event:FlexEvent):void
@@ -27,31 +56,403 @@
 				music.end();
 			}		
 			
-			protected function timerCompleteHandler():void
-			{
-				text.text = 'times up';
+			protected function mediumMode_enterStateHandler(event:FlexEvent):void
+			{	
+				//upon enter the game, reset the game and then start
+				resetGame();
+				gameMode = "Medium";
+				startGame();
 			}
-			protected function checkKeys(event:KeyboardEvent):void
+			
+			protected function mediumMode_exitStateHandler(event:FlexEvent):void
 			{
-				text.text = 'enter checkKeys';
+				music.end();
+			}		
+
+			protected function hardMode_enterStateHandler(event:FlexEvent):void
+			{	
+				//upon enter the game, reset the game and then start
+				resetGame();
+				gameMode = "Hard";
+				startGame();	
+			}
+			
+			protected function hardMode_exitStateHandler(event:FlexEvent):void
+			{
+				music.end();
+			}	
+			
+			protected function countdownMode_enterStateHandler(event:FlexEvent):void
+			{
+				//when choose the HARD mode, first enter the countdown screen
+				//set the countdown number and start the countdown timer
+				gameMode = "Countdown";
+				countdown = countdownTimer.repeatCount;
 				
+				countdownTimer.addEventListener(TimerEvent.TIMER, countdownModeTimerHandler);
+				countdownTimer.addEventListener(TimerEvent.TIMER_COMPLETE, countdownModeTimerCompleteHandler);
+				countdownTimer.start();
+			}
+
+			protected function countdownModeTimerHandler(event:TimerEvent):void
+			{
+				//update and display countdown every second
+				countdown = countdownTimer.repeatCount - countdownTimer.currentCount;				
+			}
+			
+			protected function countdownModeTimerCompleteHandler(event:TimerEvent):void
+			{	
+				//when the countdown timer is up, enter the game mode(hard)
+				countdownTimer.stop();
+				currentState = "hardMode";				
+			}	
+			
+			protected function startGame():void
+			{
+				//first get the game starting time so it can be used to compare with current time to get the elasped time
+				gameStartTime = getTimer();
+				gameTimer.addEventListener(TimerEvent.TIMER, timerCompleteHandler);
+				gameTimer.start();
+				
+				//play the music and initiate the first set of arrows to display
+				music.play(); 
+				initiateArrow();
+				
+				//set focus on top level so it can receive keyboard input
+				focus.setFocus(); 
+				FlexGlobals.topLevelApplication.addEventListener(KeyboardEvent.KEY_DOWN,checkKeys);				
+			}
+			
+			protected function timerCompleteHandler(event:TimerEvent):void
+			{
+				//every 2 seconds update the score
+				countScore();
+				
+				//every 2 seconds update and display a new set of arrows
+				changeArrow();
+
+				//get elapsed time
+				//if time > 30 seconds, timer delay set to 1500 -> update arrows every 1.5 seconds
+				//if time > 60 seconds, timer delay set to 1000 -> update arrows every 1 second
+				//if time > 90 seconds, timer delay set to 500 -> update arrows every 0.5 second
+				playedTime = getTimer() - gameStartTime;
+				
+				if(playedTime > 30000)
+				{
+					gameTimer.delay = 1500;
+				}
+				
+				if(playedTime > 60000)
+				{
+					gameTimer.delay = 1000;
+				}
+				
+				if(playedTime > 90000)
+				{
+					gameTimer.delay = 500;
+				}
+			}
+			
+			protected function initiateArrow():void
+			{
+				//set a random number to arrowNumber1,2,3
+				//but need to check and make sure these numbers don't repeat
+				arrowNumber1 = Math.ceil(Math.random() * 4);
+				
+				if(gameMode == "Easy")
+				{
+					displayArrow(arrowNumber1, arrowNumber2, arrowNumber3);
+				}
+				else if(gameMode == "Medium")
+				{
+					arrowNumber2 = Math.ceil(Math.random() * 4);
+					while(arrowNumber2 == arrowNumber1) 
+					{
+						arrowNumber2 = Math.ceil(Math.random() * 4);
+					}
+					displayArrow(arrowNumber1, arrowNumber2, arrowNumber3);
+				}
+				else if(gameMode == "Hard")
+				{
+					arrowNumber2 = Math.ceil(Math.random() * 4);
+					while(arrowNumber2 == arrowNumber1) 
+					{
+						arrowNumber2 = Math.ceil(Math.random() * 4);
+					}
+					arrowNumber3 = Math.ceil(Math.random() * 4);
+					while(arrowNumber3 == arrowNumber1 || arrowNumber3 == arrowNumber2) 
+					{
+						arrowNumber2 = Math.ceil(Math.random() * 4);
+					}	
+					displayArrow(arrowNumber1, arrowNumber2, arrowNumber3);
+				}
+			}
+			
+			protected function changeArrow():void
+			{
+				//if the new arrow number is the same as the previous one, get another random number until they are different
+				var newArrowNumber:Number = Math.ceil(Math.random() * 4);
+								
+				if(gameMode == "Easy")
+				{
+					while(newArrowNumber == arrowNumber1) 
+					{
+						newArrowNumber = Math.ceil(Math.random() * 4);
+					}
+					arrowNumber1 = newArrowNumber;
+					displayArrow(arrowNumber1, arrowNumber2, arrowNumber3);
+				}
+				else if(gameMode == "Medium")
+				{
+					while(newArrowNumber == arrowNumber1) 
+					{
+						newArrowNumber = Math.ceil(Math.random() * 4);
+					}
+					arrowNumber1 = newArrowNumber;
+					
+					arrowNumber2 = Math.ceil(Math.random() * 4);
+					while(arrowNumber2 == arrowNumber1) 
+					{
+						arrowNumber2 = Math.ceil(Math.random() * 4);
+					}
+					displayArrow(arrowNumber1, arrowNumber2, arrowNumber3);					
+				}
+				else if(gameMode == "Hard")
+				{
+					while(newArrowNumber == arrowNumber1) 
+					{
+						newArrowNumber = Math.ceil(Math.random() * 4);
+					}
+					arrowNumber1 = newArrowNumber;
+					
+					arrowNumber2 = Math.ceil(Math.random() * 4);
+					while(arrowNumber2 == arrowNumber1) 
+					{
+						arrowNumber2 = Math.ceil(Math.random() * 4);
+					}
+					
+					arrowNumber3 = Math.ceil(Math.random() * 4);
+					//don't need to get different number for arrowNumber3 because there could be 2 or 3 arrows show up randomly
+					//BUT need to check if arrowNumber3 is same with arrowNumber1 or 2 AND set the number of arrows displayed
+					//use this number to make sure the right number of keystrokes are entered
+					if(arrowNumber3 == arrowNumber2 || arrowNumber3 == arrowNumber1)
+					{
+						hardModeArrowNumber = 2;
+					}
+					else
+					{
+						hardModeArrowNumber = 3;
+					}
+					
+					displayArrow(arrowNumber1, arrowNumber2, arrowNumber3);					
+				}
+			}
+			
+			protected function displayArrow(arrowNum1:Number, arrowNum2:Number, arrowNum3:Number):void
+			{
+				//reset the alpha of all arrows to 0.1 and display arrow set by changing the alpha to 0.65
+				leftButton.alpha = upButton.alpha = rightButton.alpha = downButton.alpha = 0.1;
+				
+				if(arrowNum1 == 1 || arrowNum2 == 1 || arrowNum3 == 1)
+				{
+					leftButton.alpha = 0.65;
+				}
+				if(arrowNum1 == 2 || arrowNum2 == 2 || arrowNum3 == 2)
+				{
+					upButton.alpha = 0.65;
+				}
+				if(arrowNum1 == 3 || arrowNum2 == 3 || arrowNum3 == 3)
+				{
+					rightButton.alpha = 0.65;
+				}
+				if(arrowNum1 == 4 || arrowNum2 == 4 || arrowNum3 == 4)
+				{
+					downButton.alpha = 0.65;
+				}
+			}
+			
+			protected function checkKeys(event:KeyboardEvent):void
+			{				
 				//keycode: left=37, up=38, right=39, down=40
+				
+				//whenever there is a keystroke, compare with the keycode to identify which key is entered
+				//set the alpha of the entered arrow to 1
+				//then compare with the current displayed arrows to see if correct key(s) is(are) entered
+				//if yes AND the error flag IS NOT ALREADY ON, set flag to false -> no mistake is made so far
+				//if yes BUT the error flag IS ALREADY ON, no change on errorflag -> mistake(s) already made before
+				
+				keyEntered = keyEntered + 1;
+				
 				if(event.keyCode == 37)
 				{
 					leftButton.alpha = 1;
+					
+					if(arrowNumber1 == 1 || arrowNumber2 == 1 || arrowNumber3 == 1)
+					{
+						happyPiggyFade.play();
+						yesSound.play();
+						
+						if(!errorFlag)
+						{
+							errorFlag = false;						
+						}
+					}
+					else
+					{
+						madPiggyFade.play();
+						noSound.play();
+						
+						errorFlag = true;
+					}
 				}
-				else if(event.keyCode == 38)
+				if(event.keyCode == 38)
 				{
 					upButton.alpha = 1;
+					
+					if(arrowNumber1 == 2 || arrowNumber2 == 2 || arrowNumber3 == 2)
+					{
+						happyPiggyFade.play();
+						yesSound.play();
+						
+						if(!errorFlag)
+						{
+							errorFlag = false;						
+						}					}
+					else
+					{
+						madPiggyFade.play();
+						noSound.play();
+						
+						errorFlag = true;
+					}
 				}
-				else if(event.keyCode == 39)
+				if(event.keyCode == 39)
 				{
 					rightButton.alpha = 1;
+					
+					if(arrowNumber1 == 3 || arrowNumber2 == 3 || arrowNumber3 == 3)
+					{
+						happyPiggyFade.play();
+						yesSound.play();
+						
+						if(!errorFlag)
+						{
+							errorFlag = false;						
+						}					}
+					else
+					{
+						madPiggyFade.play();
+						noSound.play();
+						
+						errorFlag = true;
+					}
 				}
-				else if(event.keyCode == 40)
+				if(event.keyCode == 40)
 				{
 					downButton.alpha = 1;
+					
+					if(arrowNumber1 == 4 || arrowNumber2 == 4 || arrowNumber3 == 4)
+					{
+						happyPiggyFade.play();
+						yesSound.play();
+						
+						if(!errorFlag)
+						{
+							errorFlag = false;						
+						}					}
+					else
+					{
+						madPiggyFade.play();
+						noSound.play();
+						
+						errorFlag = true;
+					}
 				}
+			}
+			
+			protected function countScore():void
+			{	
+				//if there is a keystroke AND there is no error flag on
+				//then based on the game mode, compare if the number of keystrokes are correct
+				//if correct, increase score by 1 and set the life back to 3 -> only make mistakes 3 times in a row will end the game
+				if((keyEntered != 0) && !errorFlag)
+				{					
+					if(gameMode == "Easy" && keyEntered == 1)
+					{
+						score = score + 1;
+						life = 3;
+					}		
+					else if(gameMode == "Medium" && keyEntered == 2)
+					{
+						score = score + 1.5;
+						life = 3;
+					}
+					else if(gameMode == "Hard" && keyEntered == hardModeArrowNumber)
+					{
+						score = score + 2;
+						life = 3;
+					}
+					else
+					{
+						deductLife();
+					}
+					errorFlag = false;
+					keyEntered = 0;
+				}
+				else
+				{
+					deductLife();
+				}				
+			}
+			
+			protected function deductLife():void
+			{	
+				//if the no more lives left, go to result screen
+				if(life != 0)
+				{
+					life = life - 1;
+					
+					if(life == 0)
+					{
+						currentState = "resultMode";
+					}
+				}	
+				errorFlag = false;
+				keyEntered = 0;
+			}
+			
+			protected function resetGame():void
+			{
+				//reset all the variables
+				gameMode = "";
+				gameTimer.reset();
+				gameStartTime = 0;
+				playedTime = 0;
+				score = 0;
+				life = 3;
+				keyEntered = 0;
+				errorFlag = false;
+				arrowNumber1 = 0;
+				arrowNumber2 = 0;
+				arrowNumber3 = 0;
+				hardModeArrowNumber = 0;
+				gameTimer.delay = 2000;
+				countdownTimer.reset();
+				countdown = 0;
+			}
+
+			protected function titleMode_enterStateHandler(event:FlexEvent):void
+			{
+				//load the bouncing piggy image
+				piggyBounce.play();
+				startSound.play();
+			}
+
+
+			protected function resultMode_enterStateHandler(event:FlexEvent):void
+			{
+				//load gameover sound effect
+				overSound.play();
 			}
 
 		]]>
@@ -59,67 +460,107 @@
 
 	<fx:Declarations>
 		<mx:SoundEffect id="music" source="@Embed(source='../assets/song.mp3')" target="{this}" repeatCount="0" useDuration="false" duration="360000"/>
+		<mx:SoundEffect id="startSound" source="@Embed(source='../assets/start.mp3')" target="{this}" repeatCount="1" useDuration="false" duration="1000" startDelay="700"/>
+		<mx:SoundEffect id="yesSound" source="@Embed(source='../assets/yes.mp3')" target="{this}" repeatCount="1" useDuration="false" duration="1000"/>
+		<mx:SoundEffect id="noSound" source="@Embed(source='../assets/no.mp3')" target="{this}" repeatCount="1" useDuration="false" duration="1000"/>
+		<mx:SoundEffect id="overSound" source="@Embed(source='../assets/gameover.mp3')" target="{this}" repeatCount="1" useDuration="false" duration="1000"/>
+
+		<s:Fade id="happyPiggyFade" target="{happyPiggy}" alphaFrom="0" alphaTo="1" repeatCount="2" repeatBehavior="reverse" duration="300"/>
+		<s:Fade id="madPiggyFade" target="{madPiggy}" alphaFrom="0" alphaTo="1" repeatCount="2" repeatBehavior="reverse" duration="300"/>
+		<s:Bounce id="bounceEasing"/>
+		<s:Move id="piggyBounce" target="{bouncePiggy}" yFrom="-100" yTo="0" duration="1500" easer="{bounceEasing}"/>	
 	</fx:Declarations>
 	
 	<s:states>
-		<s:State name="titleMode"/>
+		<s:State name="titleMode" enterState="titleMode_enterStateHandler(event)"/>
 		<s:State name="easyMode" id="easyMode" enterState="easyMode_enterStateHandler(event)" exitState="easyMode_exitStateHandler(event)"/>
-		<s:State name="mediumMode" enterState="music.play();" exitState="music.end();"/>
-		<s:State name="hardMode" enterState="music.play();" exitState="music.end();"/>
-		<s:State name="resultMode"/>
+		<s:State name="mediumMode" id="mediumMode" enterState="mediumMode_enterStateHandler(event)" exitState="mediumMode_exitStateHandler(event)"/>
+		<s:State name="hardMode" id="hardMode" enterState="hardMode_enterStateHandler(event)" exitState="hardMode_exitStateHandler(event)"/>
+		<s:State name="countdownMode" enterState="countdownMode_enterStateHandler(event)"/>
+		<s:State name="resultMode" enterState="resultMode_enterStateHandler(event)"/>
 	</s:states>
 	
 	<s:transitions>
 		<s:Transition fromState="*" toState="*">
-			<s:Fade target="{this}" duration="400" alphaFrom="0" alphaTo="1"/>
+			<s:Fade target="{this}" duration="800" alphaFrom="0" alphaTo="1"/>
 		</s:Transition>
 	</s:transitions>
 	
 	<s:layout>
-		<s:VerticalLayout horizontalAlign="center" verticalAlign="middle" gap="50"/>
+		<s:VerticalLayout gap="50" horizontalAlign="center" verticalAlign="middle"/>
 	</s:layout>
 	
-	<s:VGroup id="titleScreen" horizontalAlign="center" gap="50" includeIn="titleMode">
-		<s:Label text="TITLE" fontSize="40" fontWeight="bold" color="#FF99CC"/>
+	<s:VGroup id="titleScreen" horizontalAlign="center" includeIn="titleMode" gap="50">
+		
+		<s:Group height="100">
+			<s:layout>
+				<s:BasicLayout/>
+			</s:layout>
+			
+			<s:Image id="bouncePiggy" source="@Embed('../assets/bounce-piggy.jpg')" mouseOver="piggyBounce.play();"/>	
+		</s:Group>
+		
+		<s:Label text="Piggy Dance!" fontSize="40" fontWeight="bold" color="#F6A1BB"/>
 		<s:HGroup gap="50">
 			<s:Button id="easyButton" label="EASY" cornerRadius="12" width="100" height="50" 
-					  fontSize="18" color="#666666" chromeColor="#F5A9D0" buttonMode="true" click="currentState = 'easyMode';"/>
+					  fontSize="18" color="#666666" chromeColor="#F6A1BB" buttonMode="true" click="currentState='easyMode';"/>
 			<s:Button id="mediumButton" label="MEDIUM" cornerRadius="12" width="100" height="50" 
-					  fontSize="18" color="#666666" chromeColor="#F5A9D0" buttonMode="true" click="currentState='mediumMode';"/>
+					  fontSize="18" color="#666666" chromeColor="#F6A1BB" buttonMode="true" click="currentState='mediumMode';"/>
 			<s:Button id="hardButton" label="HARD" cornerRadius="12" width="100" height="50" 
-					  fontSize="18" color="#666666" chromeColor="#F5A9D0" buttonMode="true" click="currentState='hardMode';"/>			
+					  fontSize="18" color="#666666" chromeColor="#F6A1BB" buttonMode="true" click="currentState='countdownMode';"/>			
 		</s:HGroup>
 	</s:VGroup>
 	
-	<s:VGroup id="easyScreen" includeIn="easyMode">
-		<s:Button id="backButton" label="Go Back" click="currentState = 'titleMode';"/>	
-		<s:Label id="text" text="test"/>
-		<s:Label text="{timerCount}"/>
+	<s:VGroup id="countdownScreen" includeIn="countdownMode">
+		<s:Label text="{countdown}" fontSize="200" fontWeight="bold" color="#F6A1BB"/>
+	</s:VGroup>
+	
+	<s:VGroup id="gameScreen" includeIn="easyMode, mediumMode, hardMode" width="70%" horizontalAlign="center">	
+		<s:HGroup width="100%">
+			<s:VGroup horizontalAlign="left" width="80%">
+				<s:Label text="Mode: {gameMode}" fontSize="14" color="#F6A1BB"/>
+				<!--<s:Label text="Start Time: {gameStartTime/1000} s" color="#A4A4A4"/>-->
+				<s:Label text="Elapsed Time: {playedTime/1000} s" color="#A4A4A4"/>
+				<s:Label text="Number of Arrows Displayed: {easyModeArrowNumber}" color="#A4A4A4" includeIn="easyMode"/>
+				<s:Label text="Number of Arrows Displayed: {mediumModeArrowNumber}" color="#A4A4A4" includeIn="mediumMode"/>
+				<s:Label text="Number of Arrows Displayed: {hardModeArrowNumber}" color="#A4A4A4" includeIn="hardMode"/>		
+				<s:Label text="Numbers of Keys Entered: {keyEntered}" color="#A4A4A4"/>
+			</s:VGroup>
+			
+			<s:VGroup horizontalAlign="center" width="20%">
+				<s:Label text="Score" fontSize="20" fontWeight="bold" color="#F6A1BB"/>	
+				<s:Label text="{score}" fontSize="50" fontWeight="bold" color="#F6A1BB"/>
+			</s:VGroup>
+		</s:HGroup>
+		
 		<s:Group>
 			<s:layout>
 				<s:BasicLayout/>
 			</s:layout>
-			<s:Button id="upButton" label="" top="0" left="256" skinClass="mySkins.UpButtonSkin" alpha="0.25"/>
-			<s:Button id="leftButton" label="" top="256" left="0" skinClass="mySkins.LeftButtonSkin" alpha="0.25"/>
-			<s:Button id="downButton" label="" top="512" left="256" skinClass="mySkins.DownButtonSkin" alpha="0.25"/>
-			<s:Button id="rightButton" label="" top="256" left="512" skinClass="mySkins.RightButtonSkin" alpha="0.25"/>		
-		</s:Group>		
+			
+			<s:Label id="focus" text="focus" alpha="0"/>
+			<s:Image id="happyPiggy" source="@Embed('../assets/happy-piggy.jpg')" top="329" left="325" alpha="0"/>
+			<s:Image id="madPiggy" source="@Embed('../assets/mad-piggy.jpg')" top="329" left="325" alpha="0"/>
+			
+			<s:Button id="upButton" label="" top="0" left="256" skinClass="mySkins.UpButtonSkin" alpha="0.1"/>
+			<s:Button id="leftButton" label="" top="256" left="0" skinClass="mySkins.LeftButtonSkin" alpha="0.1"/>
+			<s:Button id="downButton" label="" top="512" left="256" skinClass="mySkins.DownButtonSkin" alpha="0.1"/>
+			<s:Button id="rightButton" label="" top="256" left="512" skinClass="mySkins.RightButtonSkin" alpha="0.1"/>	
+			
+			<s:Label text="Chance" fontSize="20" fontWeight="bold" color="#81BEF7" top="640" left="640"/>
+			<s:Label text="{life}" fontSize="50" fontWeight="bold" color="#81BEF7" top="665" left="665"/>	
+		</s:Group>
 	</s:VGroup>
 	
-	<s:VGroup id="mediumScreen" includeIn="mediumMode">
-		<s:Label text="this is medium mode"/>
+	<s:VGroup id="resultScreen" includeIn="resultMode" horizontalAlign="center" gap="10">
+		<s:Image source="@Embed('../assets/sad-piggy.jpg')"/>
+		<s:Label text="GAME OVER!" fontSize="30" fontWeight="bold" color="#81BEF7"/>
+		<s:Label text="Your Score" fontSize="30" color="#81BEF7"/>
+		<s:BorderContainer width="100" height="70" borderColor="#81BEF7" cornerRadius="10" borderWeight="3">
+			<s:Label text="{score}" fontSize="40" color="#585858" horizontalCenter="0" verticalCenter="0"/>			
+		</s:BorderContainer>
+		<s:Button label="Play Again" cornerRadius="12" width="150" height="50" fontSize="18" color="#666666" 
+				  chromeColor="#F6A1BB" buttonMode="true" click="currentState='titleMode';"/>
 	</s:VGroup>
-	
-	<s:VGroup id="hardScreen" includeIn="hardMode">
-		<s:Label text="this is hard mode"/>
-	</s:VGroup>
-	
-	<s:VGroup id="resultScreen" includeIn="resultMode">
-		<s:Label text="GAME OVER"/>
-		<s:Label text="Your Score: "/>
-	</s:VGroup>
-	
-	
-	
 
 </s:Application>
